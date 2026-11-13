@@ -1,4 +1,32 @@
+import io
+import unittest
+
 import numpy as np
+import pandas as pd
+
+try:
+    import networkx as nx
+except ImportError:
+    nx = None
+
+from gurobi_optimods.datasets import (
+    _convert_pandas_to_digraph,
+    _convert_pandas_to_scipy,
+)
+
+
+def load_graph(graph_csv, backend):
+    """Load (headerless) source, target, capacity CSV into the requested backend."""
+    names = ["source", "target", "capacity"]
+    graph = pd.read_csv(io.StringIO(graph_csv), header=None, names=names)
+    graph = graph.set_index(["source", "target"])
+    if backend == "scipy":
+        graph = _convert_pandas_to_scipy(graph, None, cost=False, demand=False)[1]
+    elif backend == "networkx":
+        if nx is None:
+            raise unittest.SkipTest("networkx is not installed")
+        graph = _convert_pandas_to_digraph(graph, None, demand=False)
+    return graph
 
 
 def check_solution_pandas(solution, candidates):

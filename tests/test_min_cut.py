@@ -15,6 +15,7 @@ from gurobi_optimods.datasets import (
 )
 from gurobi_optimods.min_cut import min_cut
 
+from .test_graph_utils import load_graph
 from .test_min_cost_flow import (
     load_graph2_networkx,
     load_graph2_pandas,
@@ -171,3 +172,17 @@ class TestMinCut3(unittest.TestCase):
         self.assertEqual(partition[0], self.expected_partition[0])
         self.assertEqual(partition[1], self.expected_partition[1])
         self.assertEqual(cutset, self.expected_cut_set)
+
+
+class TestMinCutIssues(unittest.TestCase):
+    def test_binding_dummy_edge_gh188(self):
+        # gh-188 reported that a dummy edge with capacity equal to max flow could
+        # be chosen as the min cut.
+        graph_csv = "0,1,10"
+        for backend in ("pandas", "scipy", "networkx"):
+            with self.subTest(backend=backend):
+                graph = load_graph(graph_csv, backend)
+                result = min_cut(graph, 0, 1, verbose=False)
+                self.assertEqual(result.cut_value, 10)
+                self.assertEqual(result.partition, ({0}, {1}))
+                self.assertEqual(result.cutset, {(0, 1)})

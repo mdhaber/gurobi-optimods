@@ -85,6 +85,7 @@ def _min_cut_pandas(arc_data, source, sink, create_env):
         arc_data.loc[([source], slice(None)),]["capacity"].sum(),
         arc_data.loc[(slice(None), [sink]),]["capacity"].sum(),
     )
+    max_flow = 2*max_flow + 1  # Ensure dummy edge capacity *exceeds* max flow
     arc_data = pd.concat(
         [
             arc_data,
@@ -151,7 +152,7 @@ def _min_cut_scipy(G, source, sink, create_env):
     # Create new matrix with dummy edge (sink, source)
     original_shape = G.shape
     max_flow = G.tolil()[[0], :].sum()
-
+    max_flow = 2*max_flow + 1  # Ensure dummy edge capacity *exceeds* max flow
     data = np.append(G.data, max_flow)
 
     from_arc = np.append(G.row, sink)
@@ -231,6 +232,7 @@ def _min_cut_networkx(G, source, sink, create_env):
     max_flow = 0
     for j in G.successors(source):
         max_flow += G.edges[source, j]["capacity"]
+    max_flow = 2*max_flow + 1  # Ensure dummy edge capacity *exceeds* max flow
     G.add_edge(sink, source, cost=1, capacity=max_flow)
     with create_env() as env, gp.Model(env=env) as model:
         model.ModelSense = GRB.MAXIMIZE
